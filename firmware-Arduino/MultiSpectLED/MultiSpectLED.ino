@@ -1,6 +1,6 @@
-#include <SoftPWM.h>   //The library normally uses a 60Hz update rate which is defined in Arduino/hardware/teensy/avr/libraries/SoftPWM/SoftPWM.cpp
+  #include "SoftPWM.h"   //The library normally uses a 60Hz update rate which is defined in Arduino/hardware/teensy/avr/libraries/SoftPWM/SoftPWM.cpp
 
-#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h>           
 #include <Adafruit_SSD1306.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -8,6 +8,7 @@
 #define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
+//Uncomment line 50 (#define WIRE_IMPLEMENT_WIRE1) in \hardware\teensy\avr\libraries\Wire\WireKinetis.h to enable I2C on pins 22 and 23.
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, OLED_RESET);
 
 
@@ -106,7 +107,7 @@ void loop() {
   uint8_t brightnessInput = ReadLEDBrightness();
   uint8_t cur_brightness = map(brightnessInput, 0, 15, 10, 255);
   uint8_t cur_selection = ReadLEDSelection();
-  String power = String(map(brightnessInput,0,15,0,100)) + "%";
+      String power = String(map(cur_brightness,10,255,      4,100)) + "%";
 
   if(cur_brightness!=last_brightness || cur_selection!=last_selection) refresh=true;
 
