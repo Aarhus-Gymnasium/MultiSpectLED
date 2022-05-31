@@ -14,6 +14,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, OLED_RESET);
 #define TWOPI 6.2832
 #define PIOVERTWO 1.5708
 
+#define PIN_temperature_sensor A12
+const int B = 4275;               // B value of the thermistor
+const int R0 = 100000;            // R0 = 100k
+
 #define PIN_LED_940 13
 #define PIN_LED_850 14
 #define PIN_LED_740 15
@@ -99,22 +103,68 @@ void setup() {
 
 uint8_t last_brightness=1; //just some random unselectable numbers so the first run of loop will trigger a display refresh.
 uint8_t last_selection=64;
+float last_temperature=0;
 bool refresh=false;
 
+
 void loop() {
+  int a = analogRead(PIN_temperature_sensor);
 
+  float R = 1023.0/a-1.0;
+  R = R0*R;
+ 
+  float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
+    
   uint8_t brightnessInput = ReadLEDBrightness();
-  uint8_t cur_brightness = map(brightnessInput, 0, 15, 10, 255);
+  uint8_t cur_brightness = map(brightnessInput, 0, 15, 4, 255);
   uint8_t cur_selection = ReadLEDSelection();
-  String power = String(map(brightnessInput,0,15,0,100)) + "%";
+  String power = String(map(brightnessInput,0,15,5,100)) + "%";
 
-  if(cur_brightness!=last_brightness || cur_selection!=last_selection) refresh=true;
+  if(cur_brightness!=last_brightness || cur_selection!=last_selection || abs(temperature-last_temperature)>0.5) refresh=true;
 
   if(refresh){
     display.fillRect(0, 10, display.width(), display.height(), SSD1306_BLACK);
+    display.setTextSize(1);
+
+    display.setCursor(0,25);
+    display.print("Temperature: ");
+    display.print(temperature);
+    display.print("C");
+    
     display.setCursor(0,10);
+    display.setTextSize(2);
+
   }
   clear_all_leds();
+
+  if(temperature>50){ //TODO: Maybe some kind of hysteresis would be a good idea??
+
+      update_leds();
+
+    
+    while(1){
+    display.fillRect(0, 0, display.width(), display.height(), SSD1306_BLACK);
+    display.setTextSize(3);
+    display.setCursor(0,0);
+    display.print("TOO HOT");
+    display.setTextSize(1);
+    display.setCursor(0,25);
+    display.print("Temperature: ");
+    display.print(temperature);
+    display.print("C");
+
+    
+    a = analogRead(PIN_temperature_sensor);
+
+    R = 1023.0/a-1.0;
+    R = R0*R;
+ 
+    temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
+    display.display();
+    
+    delay(1000);
+    }
+  }
 
   cur_phase = (cur_phase > 7) ? -10 : cur_phase + 0.08;
 
@@ -144,6 +194,7 @@ void loop() {
         display.display();
         last_selection=cur_selection;
         last_brightness=cur_brightness;
+        last_temperature=temperature;
         refresh=false;
      }
 
